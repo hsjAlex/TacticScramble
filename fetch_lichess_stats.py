@@ -115,6 +115,16 @@ def main():
     os.makedirs("data", exist_ok=True)
     file_exists = os.path.isfile(OUT_FILE) and os.path.getsize(OUT_FILE) > 0
 
+    # Load usernames already recorded today to prevent duplicate rows
+    already_recorded = set()
+    if file_exists:
+        with open(OUT_FILE, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row.get("date") == today:
+                    already_recorded.add(row["username"])
+    if already_recorded:
+        print(f"Skipping {len(already_recorded)} users already recorded today.")
+
     members = get_team_members(TEAM_ID)
     if not members:
         print("No members found - nothing to do.")
@@ -122,6 +132,9 @@ def main():
 
     rows = []
     for username in members:
+        if username in already_recorded:
+            print(f"  Skipping {username} (already recorded today).")
+            continue
         print(f"  Processing {username} ...")
         user = get_user_data(username)
         if not user:
