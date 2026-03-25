@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hessische Schachjugend — Tactic Leaderboard</title>
+<title>TaktikSpektakel — Rangliste</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Crimson+Pro:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
@@ -26,7 +26,6 @@
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   html { scroll-behavior: smooth; }
 
   body {
@@ -38,20 +37,17 @@
     overflow-x: clip;
   }
 
-  /* ── chess-pattern background ── */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image:
-      repeating-conic-gradient(var(--white-sq) 0% 25%, var(--black-sq) 0% 50%);
+    background-image: repeating-conic-gradient(var(--white-sq) 0% 25%, var(--black-sq) 0% 50%);
     background-size: 48px 48px;
     opacity: 0.18;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* ── noise overlay ── */
   body::after {
     content: '';
     position: fixed;
@@ -76,7 +72,6 @@
     border-bottom: 1px solid var(--border);
     margin-bottom: 48px;
   }
-
   .header-eyebrow {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
@@ -85,7 +80,6 @@
     color: var(--gold);
     margin-bottom: 12px;
   }
-
   h1 {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(52px, 9vw, 96px);
@@ -94,12 +88,7 @@
     color: var(--text);
     margin-bottom: 16px;
   }
-
-  h1 span {
-    color: var(--gold);
-    display: block;
-  }
-
+  h1 span { color: var(--gold); display: block; }
   .header-meta {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
@@ -107,12 +96,7 @@
     color: var(--muted);
     margin-top: 12px;
   }
-
-  .header-meta strong {
-    color: var(--silver);
-    font-style: normal;
-    font-weight: 600;
-  }
+  .header-meta strong { color: var(--silver); font-style: normal; font-weight: 600; }
 
   /* ── controls ── */
   .controls {
@@ -122,13 +106,7 @@
     flex-wrap: wrap;
     align-items: center;
   }
-
-  .search-wrap {
-    flex: 1;
-    min-width: 200px;
-    position: relative;
-  }
-
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
   .search-wrap input {
     width: 100%;
     background: var(--surface);
@@ -141,10 +119,8 @@
     transition: border-color 0.2s;
     letter-spacing: 0.05em;
   }
-
   .search-wrap input:focus { border-color: var(--gold-dim); }
   .search-wrap input::placeholder { color: var(--muted); }
-
   .search-icon {
     position: absolute;
     left: 12px;
@@ -154,7 +130,6 @@
     font-size: 14px;
     pointer-events: none;
   }
-
   .filter-btn {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -168,13 +143,8 @@
     transition: all 0.15s;
     white-space: nowrap;
   }
-
   .filter-btn:hover,
-  .filter-btn.active {
-    border-color: var(--gold-dim);
-    color: var(--gold);
-  }
-
+  .filter-btn.active { border-color: var(--gold-dim); color: var(--gold); }
   .player-count {
     font-size: 11px;
     color: var(--muted);
@@ -183,14 +153,13 @@
     margin-left: auto;
   }
 
-  /* ── podium (top 3) ── */
+  /* ── podium ── */
   .podium {
     display: grid;
     grid-template-columns: 1fr 1.1fr 1fr;
     gap: 12px;
     margin-bottom: 40px;
   }
-
   .podium-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -201,75 +170,29 @@
     transition: transform 0.2s, border-color 0.2s;
     animation: fadeUp 0.5s ease both;
   }
-
-  .podium-card:hover {
-    transform: translateY(-3px);
-  }
-
+  .podium-card:hover { transform: translateY(-3px); }
   .podium-card.p1 { border-color: var(--gold-dim); order: 2; }
   .podium-card.p2 { border-color: #3a3a3a; order: 1; align-self: end; }
   .podium-card.p3 { border-color: #2e2218; order: 3; align-self: end; }
-
   .podium-card.p1 { animation-delay: 0.1s; }
   .podium-card.p2 { animation-delay: 0.2s; }
   .podium-card.p3 { animation-delay: 0.3s; }
-
   .podium-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   }
   .podium-card.p1::before { background: var(--gold); }
   .podium-card.p2::before { background: var(--silver); }
   .podium-card.p3::before { background: var(--bronze); }
-
-  .podium-rank {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 48px;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
+  .podium-rank { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 1; margin-bottom: 4px; }
   .p1 .podium-rank { color: var(--gold); }
   .p2 .podium-rank { color: var(--silver); }
   .p3 .podium-rank { color: var(--bronze); }
-
-  .podium-piece {
-    font-size: 28px;
-    margin-bottom: 8px;
-  }
-
-  .podium-name {
-    font-family: 'Crimson Pro', serif;
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    word-break: break-all;
-  }
-
-  .podium-name a {
-    color: var(--text);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
+  .podium-piece { font-size: 28px; margin-bottom: 8px; }
+  .podium-name { font-family: 'Crimson Pro', serif; font-size: 18px; font-weight: 600; margin-bottom: 4px; word-break: break-all; }
+  .podium-name a { color: var(--text); text-decoration: none; transition: color 0.15s; }
   .podium-name a:hover { color: var(--gold); }
-
-  .podium-solved {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .podium-solved strong {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 0.05em;
-    display: block;
-    color: var(--text);
-  }
-
+  .podium-solved { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .podium-solved strong { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; display: block; color: var(--text); }
   .podium-rating {
     display: inline-block;
     background: rgba(200,168,75,0.08);
@@ -280,20 +203,23 @@
     letter-spacing: 0.08em;
   }
 
-  /* ── table ── */
+  /* ── table scroll wrapper ──
+     On mobile this enables horizontal scroll if needed,
+     but the mobile media query collapses to 3 columns so it usually won't be needed. */
   .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border: 1px solid var(--border);
   }
-
   .table-wrap {
-    min-width: 560px;   /* forces scroll before content clips */
+    /* keeps columns from collapsing on desktop */
+    min-width: 480px;
   }
 
+  /* ── table ── */
   .table-header {
     display: grid;
-    grid-template-columns: 44px 1fr 100px 100px 80px 80px;
+    grid-template-columns: 44px 1fr 110px 120px 90px 90px 90px;
     padding: 10px 16px;
     background: #0f0f0f;
     border-bottom: 1px solid var(--border);
@@ -303,14 +229,15 @@
     text-transform: uppercase;
     gap: 8px;
   }
-
   .table-header span { cursor: pointer; transition: color 0.15s; user-select: none; }
-  .table-header span:hover { color: var(--gold); }
+  .table-header span:not([data-sort]) { cursor: default; }
+  .table-header span:hover { color: var(--text); }
+  .table-header span[data-sort]:hover { color: var(--gold); }
   .table-header span.sorted { color: var(--gold); }
 
   .row {
     display: grid;
-    grid-template-columns: 44px 1fr 100px 100px 80px 80px;
+    grid-template-columns: 44px 1fr 110px 120px 90px 90px 90px;
     padding: 0 16px;
     border-bottom: 1px solid var(--border);
     align-items: center;
@@ -319,116 +246,40 @@
     transition: background 0.15s;
     animation: fadeIn 0.3s ease both;
   }
-
   .row:last-child { border-bottom: none; }
   .row:hover { background: rgba(200,168,75,0.04); }
-
   .row.top3 { background: rgba(200,168,75,0.03); }
 
-  .cell-rank {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    color: var(--muted);
-    text-align: center;
-  }
-
+  .cell-rank { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--muted); text-align: center; }
   .row.top3 .cell-rank { color: var(--gold); }
 
-  .cell-player {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
+  .cell-player { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .avatar {
-    width: 30px;
-    height: 30px;
+    width: 30px; height: 30px;
     background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
     border: 1px solid #222;
   }
-
-  .player-name {
-    font-family: 'Crimson Pro', serif;
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .player-name a {
-    color: var(--text);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-
+  .player-name { font-family: 'Crimson Pro', serif; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-name a { color: var(--text); text-decoration: none; transition: color 0.15s; }
   .player-name a:hover { color: var(--gold); }
-
-  .player-name a::after {
-    content: ' ↗';
-    font-size: 10px;
-    color: var(--muted);
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
+  .player-name a::after { content: ' ↗'; font-size: 10px; color: var(--muted); opacity: 0; transition: opacity 0.15s; }
   .player-name a:hover::after { opacity: 1; }
 
-  .cell-solved {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    letter-spacing: 0.05em;
-    text-align: right;
-  }
+  .cell-solved  { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.05em; text-align: right; }
+  .cell-rating  { text-align: right; color: var(--silver); font-size: 13px; }
+  .cell-avg     { text-align: right; color: var(--muted);  font-size: 13px; }
+  .cell-storm, .cell-racer { text-align: right; color: var(--muted); font-size: 12px; }
+  .cell-storm span, .cell-racer span { display: inline-flex; align-items: center; gap: 4px; }
 
-  .cell-rating {
-    text-align: right;
-    color: var(--silver);
-    font-size: 13px;
-  }
-
-  .cell-storm, .cell-racer {
-    text-align: right;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .cell-storm span, .cell-racer span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .badge {
-    display: inline-block;
-    font-size: 10px;
-    padding: 1px 5px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    vertical-align: middle;
-  }
-
-  .badge-gold   { background: rgba(200,168,75,0.15); color: var(--gold); border: 1px solid var(--gold-dim); }
+  .badge { display: inline-block; font-size: 10px; padding: 1px 5px; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
+  .badge-gold   { background: rgba(200,168,75,0.15);  color: var(--gold);   border: 1px solid var(--gold-dim); }
   .badge-silver { background: rgba(154,165,177,0.12); color: var(--silver); border: 1px solid #4a5260; }
-  .badge-bronze { background: rgba(184,115,51,0.12); color: var(--bronze); border: 1px solid #5a3820; }
+  .badge-bronze { background: rgba(184,115,51,0.12);  color: var(--bronze); border: 1px solid #5a3820; }
 
-  /* ── empty state ── */
-  .empty {
-    padding: 60px 20px;
-    text-align: center;
-    color: var(--muted);
-    font-family: 'Crimson Pro', serif;
-    font-style: italic;
-    font-size: 18px;
-  }
+  .empty { padding: 60px 20px; text-align: center; color: var(--muted); font-family: 'Crimson Pro', serif; font-style: italic; font-size: 18px; }
 
-  /* ── footer ── */
   footer {
     margin-top: 48px;
     padding-top: 24px;
@@ -442,40 +293,24 @@
     font-size: 11px;
     letter-spacing: 0.08em;
   }
-
-  footer a {
-    color: var(--gold-dim);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
+  footer a { color: var(--gold-dim); text-decoration: none; transition: color 0.15s; }
   footer a:hover { color: var(--gold); }
 
-  /* ── animations ── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn  { from { opacity:0; }                             to { opacity:1; } }
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-
-  /* ── responsive ── */
+  /* ── mobile ──────────────────────────────────────────────────────────────
+     On screens ≤ 640px collapse to 3 columns: Rank | Spieler | active col.
+     JS adds/removes .col-hidden to every non-active data column.           */
   @media (max-width: 640px) {
     .podium { grid-template-columns: 1fr; }
     .podium-card { order: unset !important; }
 
-    /* On mobile: Rank | Player | Dynamic third column only */
     .table-header,
     .row { grid-template-columns: 36px 1fr 90px; }
 
-    /* Hide all non-dynamic columns by default on mobile */
-    .cell-rating, .cell-storm, .cell-racer,
-    .col-rating, .col-storm, .col-racer { display: none; }
-
-    /* The active mobile column is shown via JS adding .mobile-active class */
-    .col-mobile-active, .cell-mobile-active { display: block !important; }
+    /* all data cols hidden by default; JS removes this from the active one */
+    .col-hidden { display: none !important; }
   }
 </style>
 </head>
@@ -484,47 +319,43 @@
 
   <header>
     <div class="header-eyebrow">♟ Hessische Schachjugend</div>
-    <h1>Tactic<span>Scramble</span></h1>
+    <h1>Taktik<span>Spektakel</span></h1>
     <p class="header-meta">
       Puzzle-Rangliste — <strong id="total-players">—</strong> Spieler
       &nbsp;·&nbsp; aktualisiert <strong id="last-updated">—</strong>
     </p>
   </header>
 
-  <!-- podium -->
   <div class="podium" id="podium"></div>
 
-  <!-- controls -->
   <div class="controls">
     <div class="search-wrap">
       <span class="search-icon">⌕</span>
-      <input type="text" id="search" placeholder="Search player…" autocomplete="off">
+      <input type="text" id="search" placeholder="Suche Spieler..." autocomplete="off">
     </div>
-    <button class="filter-btn active" data-sort="puzzles_since_tracking">Gelöste Aufgaben</button>
-    <button class="filter-btn" data-sort="puzzle_rating_now">Taktik-Wertung</button>
-    <button class="filter-btn" data-sort="avg_bullet_blitz_rapid">Ø Spielwertung</button>
+    <!-- data-col must match the CSS class on the corresponding table cell -->
+    <button class="filter-btn active" data-sort="puzzles_since_tracking" data-col="cell-solved">Gelöste Aufgaben</button>
+    <button class="filter-btn"        data-sort="puzzle_rating_now"       data-col="cell-rating">Taktik-Wertung</button>
+    <button class="filter-btn"        data-sort="avg_bullet_blitz_rapid"  data-col="cell-avg">Ø Spielwertung</button>
+    <button class="filter-btn"        data-sort="storm_best_score"        data-col="cell-storm">Storm</button>
+    <button class="filter-btn"        data-sort="racer_best_score"        data-col="cell-racer">Racer</button>
     <span class="player-count" id="showing-count"></span>
   </div>
 
-  <!-- day-1 notice -->
-  <div id="tracking-notice" style="display:none; border:1px solid var(--gold-dim); background:rgba(200,168,75,0.06); padding:12px 16px; margin-bottom:16px; font-size:12px; color:var(--gold); letter-spacing:0.05em;">
-    ⚑ Tracking läuft seit heute — die Spalte „Gelöst" zeigt erst ab morgen echte Zuwächse.
-  </div>
-
-  <!-- table -->
   <div class="table-scroll">
   <div class="table-wrap">
-    <div class="table-header">
+    <div class="table-header" id="table-header">
       <span>#</span>
       <span>Spieler</span>
-      <span class="sorted col-solved col-mobile-active" id="th-solved" style="text-align:right" data-sort="puzzles_since_tracking">Gelöst ▾</span>
-      <span id="th-rating" class="col-rating" style="text-align:right" data-sort="puzzle_rating_now">Taktik-Wertung</span>
-      <span class="col-storm" style="text-align:right" data-sort="storm_best_score">Storm</span>
-      <span class="col-racer" style="text-align:right" data-sort="racer_best_score">Racer</span>
+      <span class="sorted" data-sort="puzzles_since_tracking" data-col="cell-solved"  style="text-align:right">Gelöst ▾</span>
+      <span                 data-sort="puzzle_rating_now"      data-col="cell-rating"  style="text-align:right">Taktik-Wertung</span>
+      <span                 data-sort="avg_bullet_blitz_rapid" data-col="cell-avg"     style="text-align:right">Ø Spielwertung</span>
+      <span                 data-sort="storm_best_score"       data-col="cell-storm"   style="text-align:right">Storm</span>
+      <span                 data-sort="racer_best_score"       data-col="cell-racer"   style="text-align:right">Racer</span>
     </div>
     <div id="table-body"></div>
   </div>
-  </div><!-- /table-scroll -->
+  </div>
 
   <footer>
     <span>Daten via <a href="https://lichess.org/api" target="_blank" rel="noopener">Lichess API</a> · stündlich aktualisiert</span>
@@ -532,121 +363,105 @@
   </footer>
 
 </div>
-
 <script>
-// ── Parse CSV ──────────────────────────────────────────────────────────────
+// ── CSV ────────────────────────────────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/\r/g, ''));
+  const headers = lines[0].split(',').map(h => h.trim().replace(/\r/g,''));
   return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/\r/g, ''));
+    const vals = line.split(',').map(v => v.trim().replace(/\r/g,''));
     const obj = {};
-    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    headers.forEach((h,i) => obj[h] = vals[i] || '');
     return obj;
   });
 }
 
-// ── Chess piece per rank ───────────────────────────────────────────────────
-function piece(rank) {
-  if (rank === 1) return '♚';
-  if (rank === 2) return '♛';
-  if (rank === 3) return '♜';
-  if (rank <= 10) return '♝';
-  return '♟';
-}
-
-function initials(username) {
-  return username.slice(0, 2).toUpperCase();
-}
-
-function fmt(val, fallback = '—') {
-  if (val === '' || val === undefined || val === null || val === 'None') return fallback;
+function fmt(val, fallback='—') {
+  if (val==='' || val==null || val==='None') return fallback;
   const n = parseFloat(val);
-  return isNaN(n) ? fallback : Math.round(n).toLocaleString();
+  return isNaN(n) ? fallback : Math.round(n).toLocaleString('de-DE');
 }
-
-function lichessUrl(username) {
-  return `https://lichess.org/@/${username}`;
-}
+function lichessUrl(u) { return `https://lichess.org/@/${u}`; }
+function initials(u)   { return u.slice(0,2).toUpperCase(); }
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allPlayers = [];
 let sortKey    = 'puzzles_since_tracking';
+let activeCol  = 'cell-solved';  // CSS class of the column shown on mobile
 let searchTerm = '';
 
-// ── Render podium ──────────────────────────────────────────────────────────
+// all data-column CSS classes, in the same order as the table columns
+const DATA_COLS = ['cell-solved','cell-rating','cell-avg','cell-storm','cell-racer'];
+
+// ── Mobile column visibility ───────────────────────────────────────────────
+// Adds .col-hidden to every data column that is NOT the active one.
+// The media query hides .col-hidden on screens ≤ 640 px.
+function applyMobileCols() {
+  // header
+  document.querySelectorAll('#table-header span[data-col]').forEach(th => {
+    th.classList.toggle('col-hidden', th.dataset.col !== activeCol);
+  });
+  // rows
+  document.querySelectorAll('#table-body .row').forEach(row => {
+    DATA_COLS.forEach(cls => {
+      const cell = row.querySelector('.'+cls);
+      if (cell) cell.classList.toggle('col-hidden', cls !== activeCol);
+    });
+  });
+}
+
+// ── Podium ─────────────────────────────────────────────────────────────────
 function renderPodium(players) {
-  const top3 = players.slice(0, 3);
-  const podium = document.getElementById('podium');
-  const classes = ['p2', 'p1', 'p3'];
-  const orders  = [2, 1, 3]; // display order: 2nd, 1st, 3rd
-  const medals  = ['badge-silver', 'badge-gold', 'badge-bronze'];
-  const pieces  = ['♛', '♚', '♜'];
+  const top3    = players.slice(0,3);
+  const classes = ['p2','p1','p3'];
+  const orders  = [2,1,3];
+  const pieces  = ['♛','♚','♜'];
+  const arr     = [top3[1], top3[0], top3[2]];
 
-  // Arrange: index 0=2nd place, 1=1st place, 2=3rd place
-  const arranged = [top3[1], top3[0], top3[2]];
-
-  podium.innerHTML = arranged.map((p, i) => {
+  document.getElementById('podium').innerHTML = arr.map((p,i) => {
     if (!p) return '';
-    const cls = classes[i];
-    const sinceFmt2 = fmt(p.puzzles_since_tracking);
-    const podiumSolved = sinceFmt2 !== '—' ? sinceFmt2 : fmt(p.puzzles_total_now);
-    const podiumLabel  = sinceFmt2 !== '—' ? 'Aufgaben seit Tracking' : 'Aufgaben gesamt (Tracking läuft…)';
-    const rating = fmt(p.puzzle_rating_now);
     return `
-      <div class="podium-card ${cls}" style="order:${orders[i]}">
+      <div class="podium-card ${classes[i]}" style="order:${orders[i]}">
         <div class="podium-piece">${pieces[i]}</div>
         <div class="podium-rank">${p.rank}</div>
-        <div class="podium-name">
-          <a href="${lichessUrl(p.username)}" target="_blank" rel="noopener">${p.username}</a>
-        </div>
-        <div class="podium-solved">
-          <strong>${podiumSolved}</strong>
-          ${podiumLabel}
-        </div>
-        <div class="podium-rating">${rating}</div>
+        <div class="podium-name"><a href="${lichessUrl(p.username)}" target="_blank" rel="noopener">${p.username}</a></div>
+        <div class="podium-solved"><strong>${fmt(p.puzzles_since_tracking)}</strong>Aufgaben gelöst</div>
+        <div class="podium-rating">${fmt(p.puzzle_rating_now)}</div>
       </div>`;
   }).join('');
 }
 
-// ── Render table ───────────────────────────────────────────────────────────
+// ── Table ──────────────────────────────────────────────────────────────────
 function renderTable(players) {
   const body = document.getElementById('table-body');
-
-  if (players.length === 0) {
+  if (!players.length) {
     body.innerHTML = '<div class="empty">Keine Spieler gefunden.</div>';
     return;
   }
+  body.innerHTML = players.map((p,i) => {
+    const isTop3 = p.rank <= 3;
+    let badge = '';
+    if      (p.rank===1) badge='<span class="badge badge-gold">♚</span>';
+    else if (p.rank===2) badge='<span class="badge badge-silver">♛</span>';
+    else if (p.rank===3) badge='<span class="badge badge-bronze">♜</span>';
 
-  body.innerHTML = players.map((p, i) => {
-    const isTop3 = parseInt(p.rank) <= 3;
-    const sinceFmt    = fmt(p.puzzles_since_tracking);
-    const solvedDisplay = sinceFmt;
-    const solvedTitle   = sinceFmt !== '—'
-      ? `${sinceFmt} Aufgaben seit Tracking-Start`
-      : `Noch kein Vergleichswert – Tracking seit ${p.first_seen || '?'}`;
-    const rating = fmt(p.puzzle_rating_now);
-    const storm  = fmt(p.storm_best_score);
-    const racer  = fmt(p.racer_best_score);
-
-    let badgeHtml = '';
-    if (p.rank === '1' || p.rank === 1) badgeHtml = '<span class="badge badge-gold ml">♚</span>';
-    else if (p.rank === '2' || p.rank === 2) badgeHtml = '<span class="badge badge-silver ml">♛</span>';
-    else if (p.rank === '3' || p.rank === 3) badgeHtml = '<span class="badge badge-bronze ml">♜</span>';
+    const storm = fmt(p.storm_best_score);
+    const racer = fmt(p.racer_best_score);
 
     return `
-      <div class="row${isTop3 ? ' top3' : ''}" style="animation-delay:${Math.min(i * 0.025, 0.5)}s">
+      <div class="row${isTop3?' top3':''}" style="animation-delay:${Math.min(i*0.025,0.5)}s">
         <div class="cell-rank">${p.rank}</div>
         <div class="cell-player">
           <div class="avatar">${initials(p.username)}</div>
           <div class="player-name">
-            <a href="${lichessUrl(p.username)}" target="_blank" rel="noopener">${p.username}</a>${badgeHtml}
+            <a href="${lichessUrl(p.username)}" target="_blank" rel="noopener">${p.username}</a>${badge}
           </div>
         </div>
-        <div class="cell-solved cell-mobile-active" data-mobile-col="puzzles_since_tracking" title="${solvedTitle}">${solvedDisplay}</div>
-        <div class="cell-rating" data-mobile-col="puzzle_rating_now">${rating}</div>
-        <div class="cell-storm" data-mobile-col="storm_best_score">${storm === '—' ? '<span style="color:#333">—</span>' : `<span>⚡ ${storm}</span>`}</div>
-        <div class="cell-racer" data-mobile-col="racer_best_score">${racer === '—' ? '<span style="color:#333">—</span>' : `<span>🏁 ${racer}</span>`}</div>
+        <div class="cell-solved">${fmt(p.puzzles_since_tracking)}</div>
+        <div class="cell-rating">${fmt(p.puzzle_rating_now)}</div>
+        <div class="cell-avg">${fmt(p.avg_bullet_blitz_rapid)}</div>
+        <div class="cell-storm">${storm==='—'?'<span style="color:#444">—</span>':`<span>⚡ ${storm}</span>`}</div>
+        <div class="cell-racer">${racer==='—'?'<span style="color:#444">—</span>':`<span>🏁 ${racer}</span>`}</div>
       </div>`;
   }).join('');
 }
@@ -654,20 +469,9 @@ function renderTable(players) {
 // ── Filter + sort ──────────────────────────────────────────────────────────
 function getFiltered() {
   let list = [...allPlayers];
-
-  if (searchTerm) {
-    list = list.filter(p => p.username.toLowerCase().includes(searchTerm));
-  }
-
-  list.sort((a, b) => {
-    const va = parseFloat(a[sortKey]) || 0;
-    const vb = parseFloat(b[sortKey]) || 0;
-    return vb - va;
-  });
-
-  // Re-rank after sort/filter
-  list.forEach((p, i) => p._displayRank = i + 1);
-
+  if (searchTerm) list = list.filter(p => p.username.toLowerCase().includes(searchTerm));
+  list.sort((a,b) => (parseFloat(b[sortKey])||0) - (parseFloat(a[sortKey])||0));
+  list.forEach((p,i) => p._rank = i+1);
   return list;
 }
 
@@ -677,42 +481,47 @@ function render() {
   document.getElementById('showing-count').textContent =
     searchTerm ? `${filtered.length} von ${allPlayers.length} Spielern` : `${allPlayers.length} Spieler`;
 
-  if (!searchTerm && sortKey === 'puzzles_since_tracking') {
-    renderPodium(allPlayers.slice(0, 3));
-    document.getElementById('podium').style.display = 'grid';
-  } else {
-    document.getElementById('podium').style.display = 'none';
-  }
+  const showPodium = !searchTerm && sortKey==='puzzles_since_tracking';
+  const podiumEl = document.getElementById('podium');
+  podiumEl.style.display = showPodium ? 'grid' : 'none';
+  if (showPodium) renderPodium(allPlayers.slice(0,3));
 
-  // Use original rank for display
-  const display = filtered.map(p => ({ ...p, rank: p._displayRank }));
-  renderTable(display);
+  renderTable(filtered.map(p => ({...p, rank: p._rank})));
+  applyMobileCols();
 }
 
-// ── Load data ──────────────────────────────────────────────────────────────
+// ── setSort ────────────────────────────────────────────────────────────────
+function setSort(key, col) {
+  sortKey   = key;
+  activeCol = col;
+
+  document.querySelectorAll('.filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.sort===key));
+
+  document.querySelectorAll('#table-header span[data-sort]').forEach(th => {
+    const active = th.dataset.sort===key;
+    th.classList.toggle('sorted', active);
+    const base = th.textContent.replace(' ▾','').replace(' ▴','');
+    th.textContent = active ? base+' ▾' : base;
+  });
+
+  render();
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const res  = await fetch('data/leaderboard.csv');
-    const text = await res.text();
+    const text = await (await fetch('data/leaderboard.csv')).text();
     allPlayers = parseCSV(text).filter(p => p.username);
 
     const lastSeen = allPlayers[0]?.last_seen || '—';
-    // Format nicely: if it's a full ISO timestamp shorten it for display
-    const displayDate = lastSeen.includes('T')
-      ? lastSeen.replace('T', ' ').substring(0, 16) + ' UTC'
-      : lastSeen;
-    document.getElementById('last-updated').textContent = displayDate;
+    document.getElementById('last-updated').textContent =
+      lastSeen.includes('T') ? lastSeen.replace('T',' ').substring(0,16)+' UTC' : lastSeen;
     document.getElementById('total-players').textContent = allPlayers.length;
-
-    // Show day-1 notice if no delta data exists yet
-    const hasDeltas = allPlayers.some(p => p.puzzles_since_tracking !== '' && p.puzzles_since_tracking !== 'None');
-    document.getElementById('tracking-notice').style.display = hasDeltas ? 'none' : 'block';
-
     render();
-    updateMobileCells(sortKey);
-  } catch (e) {
+  } catch(e) {
     document.getElementById('table-body').innerHTML =
-      '<div class="empty">leaderboard.csv konnte nicht geladen werden — bitte prüfen, ob die Datei unter data/leaderboard.csv liegt.</div>';
+      '<div class="empty">leaderboard.csv konnte nicht geladen werden.</div>';
     console.error(e);
   }
 }
@@ -721,50 +530,16 @@ async function loadData() {
 document.getElementById('search').addEventListener('input', e => {
   searchTerm = e.target.value.trim().toLowerCase();
   render();
-  updateMobileCells(sortKey);
 });
 
-function setSort(key) {
-  sortKey = key;
+document.querySelectorAll('.filter-btn').forEach(btn =>
+  btn.addEventListener('click', () => setSort(btn.dataset.sort, btn.dataset.col)));
 
-  // Update filter buttons
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.sort === key);
-  });
-
-  // Update table header highlights + mobile active column
-  document.querySelectorAll('.table-header span[data-sort]').forEach(th => {
-    const active = th.dataset.sort === key;
-    th.classList.toggle('sorted', active);
-    th.classList.toggle('col-mobile-active', active);
-    if (active) {
-      th.textContent = th.textContent.replace(' ▴','').replace(' ▾','') + ' ▾';
-    } else {
-      th.textContent = th.textContent.replace(' ▴','').replace(' ▾','');
-    }
-  });
-
-  // Update mobile-active class on all data cells
-  // We do this after render() so cells exist in DOM
-  render();
-  updateMobileCells(key);
-}
-
-function updateMobileCells(key) {
-  document.querySelectorAll('.row [data-mobile-col]').forEach(cell => {
-    const isActive = cell.dataset.mobileCol === key;
-    cell.classList.toggle('cell-mobile-active', isActive);
-  });
-}
-
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => setSort(btn.dataset.sort));
-});
-
-document.querySelectorAll('.table-header span[data-sort]').forEach(th => {
-  th.style.cursor = 'pointer';
-  th.addEventListener('click', () => setSort(th.dataset.sort));
-});
+document.querySelectorAll('#table-header span[data-sort]').forEach(th =>
+  th.addEventListener('click', () => {
+    const btn = document.querySelector(`.filter-btn[data-sort="${th.dataset.sort}"]`);
+    setSort(th.dataset.sort, btn ? btn.dataset.col : activeCol);
+  }));
 
 loadData();
 </script>
