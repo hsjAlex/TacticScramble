@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hessische Schachjugend — Taktik Leaderboard</title>
+<title>Hessische Schachjugend — Tactic Leaderboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Crimson+Pro:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
@@ -16,8 +16,8 @@
     --gold-dim: #7a6230;
     --silver:   #9aa5b1;
     --bronze:   #b87333;
-    --text:     #e8e0d0;
-    --muted:    #5a5550;
+    --text:     #f0ead8;
+    --muted:    #8a8480;
     --accent:   #e8c96d;
     --green:    #4a8c5c;
     --red:      #8c4a4a;
@@ -473,10 +473,10 @@
 
   <header>
     <div class="header-eyebrow">♟ Hessische Schachjugend</div>
-    <h1>Taktik<span>Spektakel</span></h1>
+    <h1>Tactic<span>Scramble</span></h1>
     <p class="header-meta">
-      Puzzle leaderboard — tracking <strong id="total-players">—</strong> players
-      &nbsp;·&nbsp; updated <strong id="last-updated">—</strong>
+      Puzzle-Rangliste — <strong id="total-players">—</strong> Spieler
+      &nbsp;·&nbsp; aktualisiert <strong id="last-updated">—</strong>
     </p>
   </header>
 
@@ -489,9 +489,9 @@
       <span class="search-icon">⌕</span>
       <input type="text" id="search" placeholder="Search player…" autocomplete="off">
     </div>
-    <button class="filter-btn active" data-sort="puzzles_since_tracking">Puzzles solved</button>
-    <button class="filter-btn" data-sort="puzzle_rating_now">Puzzle rating</button>
-    <button class="filter-btn" data-sort="avg_bullet_blitz_rapid">Avg rating</button>
+    <button class="filter-btn active" data-sort="puzzles_since_tracking">Gelöste Aufgaben</button>
+    <button class="filter-btn" data-sort="puzzle_rating_now">Taktik-Wertung</button>
+    <button class="filter-btn" data-sort="avg_bullet_blitz_rapid">Ø Spielwertung</button>
     <span class="player-count" id="showing-count"></span>
   </div>
 
@@ -499,18 +499,18 @@
   <div class="table-wrap">
     <div class="table-header">
       <span>#</span>
-      <span>Player</span>
-      <span class="sorted" id="th-solved" style="text-align:right">Solved ▾</span>
-      <span id="th-rating" style="text-align:right">Puzzle Rtg</span>
-      <span class="col-storm" style="text-align:right">Storm</span>
-      <span class="col-racer" style="text-align:right">Racer</span>
+      <span>Spieler</span>
+      <span class="sorted" id="th-solved" style="text-align:right" data-sort="puzzles_since_tracking">Gelöst ▾</span>
+      <span id="th-rating" style="text-align:right" data-sort="puzzle_rating_now">Taktik-Wertung</span>
+      <span class="col-storm" style="text-align:right" data-sort="storm_best_score">Storm</span>
+      <span class="col-racer" style="text-align:right" data-sort="racer_best_score">Racer</span>
     </div>
     <div id="table-body"></div>
   </div>
 
   <footer>
-    <span>Data via <a href="https://lichess.org/api" target="_blank" rel="noopener">Lichess API</a> · auto-updated daily at 00:00 UTC</span>
-    <a href="https://lichess.org/team/taktikspektakel" target="_blank" rel="noopener">→ Team page</a>
+    <span>Daten via <a href="https://lichess.org/api" target="_blank" rel="noopener">Lichess API</a> · stündlich aktualisiert</span>
+    <a href="https://lichess.org/team/hessische-schachjugend" target="_blank" rel="noopener">→ Teamseite</a>
   </footer>
 
 </div>
@@ -582,9 +582,9 @@ function renderPodium(players) {
         </div>
         <div class="podium-solved">
           <strong>${solved}</strong>
-          puzzles solved
+          Aufgaben gelöst
         </div>
-        <div class="podium-rating">⊕ ${rating}</div>
+        <div class="podium-rating">${rating}</div>
       </div>`;
   }).join('');
 }
@@ -594,7 +594,7 @@ function renderTable(players) {
   const body = document.getElementById('table-body');
 
   if (players.length === 0) {
-    body.innerHTML = '<div class="empty">No players found matching your search.</div>';
+    body.innerHTML = '<div class="empty">Keine Spieler gefunden.</div>';
     return;
   }
 
@@ -651,7 +651,7 @@ function render() {
   const filtered = getFiltered();
 
   document.getElementById('showing-count').textContent =
-    searchTerm ? `${filtered.length} of ${allPlayers.length} players` : `${allPlayers.length} players`;
+    searchTerm ? `${filtered.length} von ${allPlayers.length} Spielern` : `${allPlayers.length} Spieler`;
 
   if (!searchTerm && sortKey === 'puzzles_since_tracking') {
     renderPodium(allPlayers.slice(0, 3));
@@ -673,13 +673,17 @@ async function loadData() {
     allPlayers = parseCSV(text).filter(p => p.username);
 
     const lastSeen = allPlayers[0]?.last_seen || '—';
-    document.getElementById('last-updated').textContent = lastSeen;
+    // Format nicely: if it's a full ISO timestamp shorten it for display
+    const displayDate = lastSeen.includes('T')
+      ? lastSeen.replace('T', ' ').substring(0, 16) + ' UTC'
+      : lastSeen;
+    document.getElementById('last-updated').textContent = displayDate;
     document.getElementById('total-players').textContent = allPlayers.length;
 
     render();
   } catch (e) {
     document.getElementById('table-body').innerHTML =
-      '<div class="empty">Could not load leaderboard.csv — make sure it lives at data/leaderboard.csv relative to this page.</div>';
+      '<div class="empty">leaderboard.csv konnte nicht geladen werden — bitte prüfen, ob die Datei unter data/leaderboard.csv liegt.</div>';
     console.error(e);
   }
 }
@@ -690,13 +694,34 @@ document.getElementById('search').addEventListener('input', e => {
   render();
 });
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    sortKey = btn.dataset.sort;
-    render();
+function setSort(key) {
+  sortKey = key;
+
+  // Update filter buttons
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sort === key);
   });
+
+  // Update table header highlights
+  document.querySelectorAll('.table-header span[data-sort]').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === key);
+    if (th.dataset.sort === key) {
+      th.textContent = th.textContent.replace(' ▴','').replace(' ▾','') + ' ▾';
+    } else {
+      th.textContent = th.textContent.replace(' ▴','').replace(' ▾','');
+    }
+  });
+
+  render();
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => setSort(btn.dataset.sort));
+});
+
+document.querySelectorAll('.table-header span[data-sort]').forEach(th => {
+  th.style.cursor = 'pointer';
+  th.addEventListener('click', () => setSort(th.dataset.sort));
 });
 
 loadData();
