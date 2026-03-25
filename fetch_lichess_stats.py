@@ -1,16 +1,3 @@
-"""
-Lichess Tactics & Rating Tracker
-Team: hessische-schachjugend
-
-Fetches for every team member:
-  - Ratings: Bullet, Blitz, Rapid (and their average)
-  - Puzzle rating, rating deviation, rating progress, total solved
-  - Puzzle Storm best score, Puzzle Racer best score
-
-Results are appended to data/tactics_history.csv hourly.
-Run via GitHub Actions (see .github/workflows/lichess_tracker.yml).
-"""
-
 import csv
 import json
 import os
@@ -21,12 +8,9 @@ from typing import Optional
 
 import requests
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 API_KEY  = os.environ.get("LICHESS_API_KEY", "")
 if not API_KEY:
-    print("ERROR: LICHESS_API_KEY environment variable is not set.")
+    print("ERROR: LICHESS_API_KEY not set.")
     sys.exit(1)
 
 TEAM_ID  = "taktikspektakel"
@@ -37,65 +21,84 @@ OUT_FILE = "data/tactics_history.csv"
 FIELDNAMES = [
     "timestamp",
     "username",
-    # Game ratings
     "bullet_rating",
     "blitz_rating",
     "rapid_rating",
     "avg_bullet_blitz_rapid",
-    # Puzzle stats (all available from /api/user/<username>)
     "puzzle_rating",
-    "puzzle_rating_deviation",   # rd: lower = more reliable rating
-    "puzzle_rating_progress",    # prog: change over last 12 games (+/-)
-    "puzzles_solved_total",      # games: all-time count
-    # Bonus: best scores from timed puzzle modes
-    "storm_best_score",          # Puzzle Storm: most puzzles in 3 min
-    "racer_best_score",          # Puzzle Racer: best finish position
+    "puzzle_rating_deviation",
+    "puzzle_rating_progress",
+    "puzzles_solved_total",
+    "storm_best_score",
+    "racer_best_score",
 ]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+def fetch_with_retry(url, headers, method="GET", data=None, retries=3):
+    for attempt in range(retries):
+        try:
+            if method == "POST":
+                resp = requests.post(url, headers=headers, data=data, timeout=30)
+            else:
+                resp = requests.get(url, headers=headers, timeout=15)
+
+            if resp.status_code == 429:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+
+            resp.raise_for_status()
+            return resp
+
+        except requests.RequestException:
+            if attempt == retries - 1:
+                raise
+            time.sleep(1.5 * (attempt + 1))
+
+
 def get_team_members(team_id: str) -> list:
-    """Return a list of usernames for every member of the team."""
     url = f"{BASE_URL}/team/{team_id}/users"
-    resp = requests.get(
+    resp = fetch_with_retry(
         url,
-        headers={**HEADERS, "Accept": "application/x-ndjson"},
-        stream=True,
-        timeout=60,
+        {**HEADERS, "Accept": "application/x-ndjson"}
     )
-    resp.raise_for_status()
+
     usernames = []
     for line in resp.iter_lines():
         if not line:
             continue
         try:
             obj = json.loads(line)
-        except json.JSONDecodeError:
+            username = obj.get("username") or obj.get("id")
+            if username:
+                usernames.append(username)
+        except:
             continue
-        username = obj.get("username") or obj.get("id")
-        if username:
-            usernames.append(username)
-        else:
-            print(f"  [WARN] Skipping unexpected line shape: {list(obj.keys())}")
-    print(f"Found {len(usernames)} members in team '{team_id}'.")
+
+    print(f"[INFO] Found {len(usernames)} members.")
     return usernames
 
 
-def get_user_data(username: str) -> dict:
-    """Fetch public user data (ratings, puzzle stats)."""
-    url = f"{BASE_URL}/user/{username}"
-    resp = requests.get(url, headers=HEADERS, timeout=15)
-    if resp.status_code == 404:
-        print(f"  [WARN] User '{username}' not found - skipping.")
-        return {}
-    resp.raise_for_status()
+def get_users_bulk(usernames):
+    url = f"{BASE_URL}/users"
+    resp = fetch_with_retry(
+        url,
+        {**HEADERS, "Content-Type": "text/plain"},
+        method="POST",
+        data=",".join(usernames),
+    )
     return resp.json()
 
 
+def chunked(lst, size=300):
+    for i in range(0, len(lst), size):
+        yield lst[i:i+size]
+
+
 def safe_get(d: dict, *keys, default=None):
-    """Safely traverse nested dicts."""
     for key in keys:
         if not isinstance(d, dict):
             return default
@@ -112,85 +115,87 @@ def safe_get(d: dict, *keys, default=None):
 def main():
     now = datetime.datetime.utcnow()
     timestamp = now.strftime("%Y-%m-%d %H:%M UTC")
-    current_hour = now.strftime("%Y-%m-%d %H")  # used for dedup: one snapshot per user per hour
+    current_hour = now.strftime("%Y-%m-%d %H")
 
     os.makedirs("data", exist_ok=True)
     file_exists = os.path.isfile(OUT_FILE) and os.path.getsize(OUT_FILE) > 0
 
-    # Skip users already recorded in this same hour to prevent duplicate rows
     already_recorded = set()
+    last_totals = {}
+
     if file_exists:
         with open(OUT_FILE, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
-                row_hour = row.get("timestamp", "")[:13]  # "YYYY-MM-DD HH"
+                row_hour = row.get("timestamp", "")[:13]
                 if row_hour == current_hour:
                     already_recorded.add(row["username"])
-    if already_recorded:
-        print(f"Skipping {len(already_recorded)} users already recorded this hour.")
+                last_totals[row["username"]] = row.get("puzzles_solved_total")
 
     members = get_team_members(TEAM_ID)
-    if not members:
-        print("No members found - nothing to do.")
-        sys.exit(0)
 
     rows = []
-    for username in members:
-        if username in already_recorded:
-            print(f"  Skipping {username} (already recorded this hour).")
-            continue
-        print(f"  Processing {username} ...")
-        user = get_user_data(username)
-        if not user:
-            continue
 
-        perfs = user.get("perfs", {})
+    for chunk in chunked(members, 300):
+        users = get_users_bulk(chunk)
 
-        bullet_r = safe_get(perfs, "bullet", "rating")
-        blitz_r  = safe_get(perfs, "blitz",  "rating")
-        rapid_r  = safe_get(perfs, "rapid",  "rating")
+        for user in users:
+            username = user.get("username")
 
-        available  = [r for r in [bullet_r, blitz_r, rapid_r] if r is not None]
-        avg_rating = round(sum(available) / len(available), 1) if available else None
+            if username in already_recorded:
+                print(f"[SKIP] {username} already recorded")
+                continue
 
-        puzzle      = perfs.get("puzzle", {})
-        puzzle_r    = puzzle.get("rating")
-        puzzle_rd   = puzzle.get("rd")
-        puzzle_prog = puzzle.get("prog")
-        puzzle_total= puzzle.get("games", 0)
+            perfs = user.get("perfs", {})
 
-        storm_score = safe_get(perfs, "storm", "score")
-        racer_score = safe_get(perfs, "racer", "score")
+            bullet = safe_get(perfs, "bullet", "rating")
+            blitz  = safe_get(perfs, "blitz", "rating")
+            rapid  = safe_get(perfs, "rapid", "rating")
 
-        row = {
-            "timestamp":               timestamp,
-            "username":                username,
-            "bullet_rating":           bullet_r,
-            "blitz_rating":            blitz_r,
-            "rapid_rating":            rapid_r,
-            "avg_bullet_blitz_rapid":  avg_rating,
-            "puzzle_rating":           puzzle_r,
-            "puzzle_rating_deviation": puzzle_rd,
-            "puzzle_rating_progress":  puzzle_prog,
-            "puzzles_solved_total":    puzzle_total,
-            "storm_best_score":        storm_score,
-            "racer_best_score":        racer_score,
-        }
-        rows.append(row)
-        prog_str = str(puzzle_prog) if puzzle_prog is not None else "?"
-        print(
-            f"    -> puzzle: {puzzle_r} (rd={puzzle_rd}, prog={prog_str}), "
-            f"total solved: {puzzle_total}, storm: {storm_score}, racer: {racer_score}"
-        )
+            available = [r for r in [bullet, blitz, rapid] if r is not None]
+            avg = round(sum(available) / len(available), 1) if available else None
 
-        time.sleep(0.5)
+            puzzle = perfs.get("puzzle", {})
 
-    with open(OUT_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerows(rows)
+            puzzle_r    = puzzle.get("rating")
+            puzzle_rd   = puzzle.get("rd")
+            puzzle_prog = puzzle.get("prog")
+            puzzle_total= puzzle.get("games")
 
-    print(f"\nDone. Wrote {len(rows)} rows to '{OUT_FILE}'.")
+            storm = safe_get(perfs, "storm", "score")
+            racer = safe_get(perfs, "racer", "score")
+
+            # ✅ Skip unchanged users
+            if str(puzzle_total) == last_totals.get(username):
+                print(f"[SKIP] {username} unchanged")
+                continue
+
+            row = {
+                "timestamp": timestamp,
+                "username": username,
+                "bullet_rating": bullet,
+                "blitz_rating": blitz,
+                "rapid_rating": rapid,
+                "avg_bullet_blitz_rapid": avg,
+                "puzzle_rating": puzzle_r,
+                "puzzle_rating_deviation": puzzle_rd,
+                "puzzle_rating_progress": puzzle_prog,
+                "puzzles_solved_total": puzzle_total,
+                "storm_best_score": storm,
+                "racer_best_score": racer,
+            }
+
+            rows.append(row)
+
+            print(f"[INFO] {username}: puzzles={puzzle_total}, rating={puzzle_r}")
+
+    if rows:
+        with open(OUT_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerows(rows)
+
+    print(f"\nDone. Wrote {len(rows)} rows.")
 
 
 if __name__ == "__main__":
