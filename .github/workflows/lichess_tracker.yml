@@ -6,8 +6,8 @@ concurrency:
 
 on:
   schedule:
-    - cron: "0 * * * *"
-  workflow_dispatch:
+    - cron: "0 * * * *"   # jede volle Stunde
+  workflow_dispatch:        # manuell auslösbar
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 🔥 WICHTIG für rebase!
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -33,29 +33,43 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      # Step 1: fetch stats
       - name: Fetch Lichess stats
         env:
           LICHESS_API_KEY: ${{ secrets.LICHESS_API_KEY }}
         run: python fetch_lichess_stats.py
 
-      # Step 2: generate leaderboard
       - name: Generate leaderboard
         run: python generate_leaderboard.py
 
-      # Step 3: commit + push (FIXED 🔥)
       - name: Commit and push
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add data/
 
-          git commit -m "chore: tactics snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes"
+          # Commit, but don't fail if nothing changed
+          git commit -m "chore: tactics snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes to commit"
 
-          # 🔥 DAS ist der entscheidende Fix
+          # Retry push with rebase to handle parallel runs
           for i in 1 2 3; do
             git pull --rebase origin main && git push origin main && break
-            echo "Retry $i..."
-            sleep 2
+            echo "Push attempt $i failed, retrying..."
+            sleep $((i * 3))
           done
+
+      # Keep-alive: prevents GitHub from disabling scheduled workflows
+      # after 60 days of repo inactivity
+      - name: Keep workflow alive
+        uses: actions/github-script@v7
+        if: github.event_name == 'schedule'
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const workflows = await github.rest.actions.listRepoWorkflows({ owner, repo });
+            for (const wf of workflows.data.workflows) {
+              if (wf.state === 'disabled_inactivity') {
+                await github.rest.actions.enableWorkflow({ owner, repo, workflow_id: wf.id });
+                console.log(`Re-enabled: ${wf.name}`);
+              }
+            }
