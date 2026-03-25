@@ -1,19 +1,3 @@
-"""
-Lichess Puzzle Leaderboard Generator
-=====================================
-Reads data/tactics_history.csv and produces data/leaderboard.csv.
-
-For each user it finds:
-  - Their OLDEST recorded row  -> puzzles_solved_total at tracking start
-  - Their NEWEST recorded row  -> puzzles_solved_total today
-  - Difference = puzzles solved since tracking began
-
-Output is sorted descending by puzzles solved since tracking.
-
-Run this after fetch_lichess_stats.py in the same GitHub Actions job,
-or standalone: python generate_leaderboard.py
-"""
-
 import csv
 import os
 import sys
@@ -28,7 +12,7 @@ LEADERBOARD_FIELDS = [
     "puzzles_since_tracking",
     "puzzles_total_now",
     "puzzle_rating_now",
-    "puzzle_rating_progress",   # prog from most recent snapshot
+    "puzzle_rating_progress",
     "avg_bullet_blitz_rapid",
     "storm_best_score",
     "racer_best_score",
@@ -37,13 +21,42 @@ LEADERBOARD_FIELDS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def get_timestamp(row):
+    return row.get("timestamp") or row.get("date") or ""
+
+
+def parse_ts(ts):
+    try:
+        return datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M UTC")
+    except:
+        return None
+
+
+def safe_int(value, default=None):
+    try:
+        return int(value) if value not in (None, "", "None") else default
+    except:
+        return default
+
+
+def safe_float(value, default=None):
+    try:
+        return float(value) if value not in (None, "", "None") else default
+    except:
+        return default
+
+
+# ---------------------------------------------------------------------------
+# Load data
+# ---------------------------------------------------------------------------
+
 def load_history(path: str) -> dict:
-    """
-    Load CSV and return a dict keyed by username.
-    Each value is a list of rows sorted by date ascending.
-    """
     if not os.path.isfile(path):
-        print(f"ERROR: {path} not found. Run fetch_lichess_stats.py first.")
+        print(f"ERROR: {path} not found.")
         sys.exit(1)
 
     users = {}
@@ -51,84 +64,108 @@ def load_history(path: str) -> dict:
         reader = csv.DictReader(f)
         for row in reader:
             username = row["username"]
-            if username not in users:
-                users[username] = []
-            users[username].append(row)
+            users.setdefault(username, []).append(row)
 
-    # Sort each user's rows by date ascending
+    # sort per user
     for username in users:
-        users[username].sort(key=lambda r: r.get("timestamp", r.get("date", "")))
+        users[username].sort(key=lambda r: get_timestamp(r))
 
     return users
 
 
-def safe_int(value, default=None):
-    try:
-        return int(value) if value not in (None, "", "None") else default
-    except (ValueError, TypeError):
-        return default
-
-
-def safe_float(value, default=None):
-    try:
-        return float(value) if value not in (None, "", "None") else default
-    except (ValueError, TypeError):
-        return default
-
+# ---------------------------------------------------------------------------
+# Build leaderboard
+# ---------------------------------------------------------------------------
 
 def build_leaderboard(users: dict) -> list:
     entries = []
 
     for username, rows in users.items():
-        # Deduplicate: keep only one row per date (the last written that day)
-        by_date = {}
+        # Deduplicate (latest per timestamp wins)
+        by_ts = {}
         for row in rows:
-            by_date[row.get("timestamp", row.get("date", ""))] = row
-        deduped = sorted(by_date.values(), key=lambda r: r.get("timestamp", r.get("date","")))
+            ts = get_timestamp(row)
+            by_ts[ts] = row
+
+        deduped = sorted(by_ts.values(), key=lambda r: get_timestamp(r))
+
+        if not deduped:
+            continue
 
         oldest = deduped[0]
         newest = deduped[-1]
 
-        total_now    = safe_int(newest.get("puzzles_solved_total"), 0)
-        total_start  = safe_int(oldest.get("puzzles_solved_total"), 0)
-        multi_day    = oldest.get("timestamp","")[:10] != newest.get("timestamp","")[:10]
+        total_now   = safe_int(newest.get("puzzles_solved_total"), 0)
+        total_start = safe_int(oldest.get("puzzles_solved_total"), 0)
 
-        # Only show a delta when we have snapshots from genuinely different days.
-        # On day 1 (or if history is corrupted), fall back to total count.
-        solved_since = (total_now - total_start) if multi_day else total_now
+        oldest_ts = get_timestamp(oldest)
+        newest_ts = get_timestamp(newest)
+
+        dt_old = parse_ts(oldest_ts)
+        dt_new = parse_ts(newest_ts)
+
+        # ✅ FIX: Always compute progress (hourly-compatible)
+        solved_since = total_now - total_start
+
+        # Optional: suppress if < 1 hour of data
+        if dt_old and dt_new:
+            hours = (dt_new - dt_old).total_seconds() / 3600
+            if hours < 1:
+                solved_since = None
 
         entries.append({
-            "username":               username,
+            "username": username,
             "puzzles_since_tracking": solved_since,
-            "puzzles_total_now":      total_now,
-            "puzzle_rating_now":      safe_int(newest.get("puzzle_rating")),
+            "puzzles_total_now": total_now,
+            "puzzle_rating_now": safe_int(newest.get("puzzle_rating")),
             "puzzle_rating_progress": safe_int(newest.get("puzzle_rating_progress")),
             "avg_bullet_blitz_rapid": safe_float(newest.get("avg_bullet_blitz_rapid")),
-            "storm_best_score":       safe_int(newest.get("storm_best_score")),
-            "racer_best_score":       safe_int(newest.get("racer_best_score")),
-            "first_seen":             oldest.get("timestamp", oldest.get("date","")),
-            "last_seen":              newest.get("timestamp", newest.get("date","")),
+            "storm_best_score": safe_int(newest.get("storm_best_score")),
+            "racer_best_score": safe_int(newest.get("racer_best_score")),
+            "first_seen": oldest_ts,
+            "last_seen": newest_ts,
         })
 
-    # Sort: most puzzles solved since tracking first
-    entries.sort(key=lambda e: e["puzzles_since_tracking"], reverse=True)
+    # ✅ Improved sorting
+    entries.sort(
+        key=lambda e: (
+            e["puzzles_since_tracking"] is None,
+            -(e["puzzles_since_tracking"] or 0),
+            -(e["puzzles_total_now"] or 0),
+        )
+    )
 
-    # Add rank
-    for i, entry in enumerate(entries, start=1):
-        entry["rank"] = i
+    # ✅ Stable ranking (ties handled)
+    rank = 1
+    prev = None
+    for i, e in enumerate(entries):
+        current = (e["puzzles_since_tracking"], e["puzzles_total_now"])
+        if current != prev:
+            rank = i + 1
+        e["rank"] = rank
+        prev = current
 
     return entries
 
 
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+
 def print_leaderboard(entries: list):
-    print(f"\n{'RANK':<5} {'USERNAME':<20} {'SOLVED':<8} {'RATING':<8} {'PROG':<6}")
-    print("-" * 55)
-    for e in entries[:20]:  # print top 20 to console
+    print(f"\n{'RANK':<5} {'USERNAME':<20} {'SOLVED':<10} {'RATING':<8} {'PROG':<6}")
+    print("-" * 60)
+
+    for e in entries[:20]:
+        solved = e["puzzles_since_tracking"]
+        solved_str = f"{solved:,}" if solved is not None else "—"
+
         prog = e["puzzle_rating_progress"]
         prog_str = f"{prog:+d}" if prog is not None else "?"
+
         print(
             f"{e['rank']:<5} {e['username']:<20} "
-            f"{e['puzzles_since_tracking']:<8} "
+            f"{solved_str:<10} "
             f"{str(e['puzzle_rating_now'] or '?'):<8} "
             f"{prog_str:<6}"
         )
@@ -139,6 +176,7 @@ def main():
     entries = build_leaderboard(users)
 
     os.makedirs("data", exist_ok=True)
+
     with open(OUT_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=LEADERBOARD_FIELDS)
         writer.writeheader()
