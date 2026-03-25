@@ -1,6 +1,6 @@
 """
 Lichess Tactics & Rating Tracker
-Team: hessische-schachjugend
+Team: taktikspektakel
 
 Fetches for every team member:
   - Ratings: Bullet, Blitz, Rapid (and their average)
@@ -29,7 +29,7 @@ if not API_KEY:
     print("ERROR: LICHESS_API_KEY environment variable is not set.")
     sys.exit(1)
 
-TEAM_ID  = "hessische-schachjugend"
+TEAM_ID  = "taktikspektakel"
 BASE_URL = "https://lichess.org/api"
 HEADERS  = {"Authorization": f"Bearer {API_KEY}"}
 OUT_FILE = "data/tactics_history.csv"
