@@ -104,14 +104,8 @@ def build_leaderboard(users: dict) -> list:
         dt_old = parse_ts(oldest_ts)
         dt_new = parse_ts(newest_ts)
 
-        # ✅ FIX: Always compute progress (hourly-compatible)
-        solved_since = total_now - total_start
-
-        # Optional: suppress if < 1 hour of data
-        if dt_old and dt_new:
-            hours = (dt_new - dt_old).total_seconds() / 3600
-            if hours < 1:
-                solved_since = None
+# replacement code
+solved_since = total_now - total_start
 
         entries.append({
             "username": username,
