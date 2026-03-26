@@ -72,20 +72,21 @@ def get_team_members() -> set:
             obj      = json.loads(line)
             username = obj.get("username") or obj.get("id")
             if username:
-                members.add(username)
+                members.add(username.lower())  # normalisiert für Vergleich
         except json.JSONDecodeError:
             continue
     return members
 
 
 def get_known_members() -> set:
+    """Gibt alle bekannten Usernamen in Kleinbuchstaben zurück (case-insensitive)."""
     if not os.path.isfile(OUT_FILE):
         return set()
     known = set()
     with open(OUT_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             if row.get("username"):
-                known.add(row["username"])
+                known.add(row["username"].lower())
     return known
 
 
@@ -129,7 +130,7 @@ def build_row(user: dict, timestamp: str) -> Optional[dict]:
 # ── Main ────────────────────────────────────────────────────────────────────
 
 def main():
-    timestamp  = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    timestamp  = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     file_exists = os.path.isfile(OUT_FILE) and os.path.getsize(OUT_FILE) > 0
 
     os.makedirs("data", exist_ok=True)
@@ -152,7 +153,11 @@ def main():
         print(f"  → Baseline für '{username}'...")
         try:
             resp = fetch_with_retry(f"{BASE_URL}/user/{username}", HEADERS)
-            row  = build_row(resp.json(), timestamp)
+            user_data = resp.json()
+            # Wichtig: nochmal prüfen ob der User wirklich noch nicht bekannt ist
+            # (mit korrektem API-Username, nicht dem lowercase-Key)
+            canonical = user_data.get("username", username)
+            row  = build_row(user_data, timestamp)
             if row:
                 new_rows.append(row)
                 print(f"    ✓ Aufgaben gesamt: {row['puzzles_solved_total']}, Wertung: {row['puzzle_rating']}")
