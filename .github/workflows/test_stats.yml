@@ -1,7 +1,7 @@
 name: 🧪 Test — Stats-Update
 
 on:
-  workflow_dispatch:   # nur manuell auslösbar
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -9,69 +9,24 @@ env:
 jobs:
   test-stats:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - run: pip install requests
-
-      - name: Stats abrufen (DRY RUN — schreibt nichts)
+      - name: Stats abrufen (DRY RUN)
         env:
           LICHESS_API_KEY: ${{ secrets.LICHESS_API_KEY }}
           DRY_RUN: "true"
         run: python fetch_lichess_stats.py
-
-      - name: Rangliste generieren (DRY RUN)
+      - name: Rangliste generieren
         env:
           DRY_RUN: "true"
         run: python generate_leaderboard.py
-
       - name: Zeige Ergebnis
         run: |
           echo "=== tactics_history.csv (letzte 10 Zeilen) ==="
           tail -10 data/tactics_history.csv || echo "Datei nicht gefunden"
-          echo ""
-          echo "=== leaderboard.csv ==="
-          cat data/leaderboard.csv || echo "Datei nicht gefunden"name: 🧪 Test — Stats-Update
-
-on:
-  workflow_dispatch:   # nur manuell auslösbar
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-jobs:
-  test-stats:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - run: pip install requests
-
-      - name: Stats abrufen (DRY RUN — schreibt nichts)
-        env:
-          LICHESS_API_KEY: ${{ secrets.LICHESS_API_KEY }}
-          DRY_RUN: "true"
-        run: python fetch_lichess_stats.py
-
-      - name: Rangliste generieren (DRY RUN)
-        env:
-          DRY_RUN: "true"
-        run: python generate_leaderboard.py
-
-      - name: Zeige Ergebnis
-        run: |
-          echo "=== tactics_history.csv (letzte 10 Zeilen) ==="
-          tail -10 data/tactics_history.csv || echo "Datei nicht gefunden"
-          echo ""
           echo "=== leaderboard.csv ==="
           cat data/leaderboard.csv || echo "Datei nicht gefunden"
