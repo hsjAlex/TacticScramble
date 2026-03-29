@@ -107,7 +107,7 @@ jobs:
         id: check
         run: |
           MINUTE=$(date -u +%M)
-          if [ "$MINUTE" = "00" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+          if [ "$MINUTE" = "25" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
             echo "run=false" >> $GITHUB_OUTPUT
             echo "Minute=$MINUTE → Übersprungen (update-stats übernimmt zur vollen Stunde)."
           else
