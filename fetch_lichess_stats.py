@@ -83,21 +83,6 @@ def get_team_members(team_id: str) -> list:
     return usernames
 
 
-def get_users_bulk(usernames):
-    url = f"{BASE_URL}/users"
-    resp = fetch_with_retry(
-        url,
-        {**HEADERS, "Content-Type": "text/plain"},
-        method="POST",
-        data="\n".join(usernames),  # Lichess /api/users erwartet newline-getrennte Namen
-    )
-    return resp.json()
-
-
-def chunked(lst, size=300):
-    for i in range(0, len(lst), size):
-        yield lst[i:i+size]
-
 
 def safe_get(d: dict, *keys, default=None):
     for key in keys:
@@ -176,37 +161,19 @@ def main():
         }
 
     # ── Bulk fetch (max 300 per request) ────────────────────────────────────
-    fetched_usernames = set()
-    for chunk in chunked(members, 300):
+    # Einzelabruf für jeden Spieler (zuverlässiger als Bulk-API)
+    to_fetch = [m for m in members if m.lower() not in already_recorded]
+    print(f"[INFO] Rufe {len(to_fetch)} Spieler ab ({len(already_recorded)} bereits diese Stunde erfasst)...")
+    for username in to_fetch:
         try:
-            print(f"[INFO] Bulk-Fetch für {len(chunk)} Spieler...")
-            bulk_users = get_users_bulk(chunk)
-            print(f"[INFO] API zurückgegeben: {len(bulk_users)} Spieler")
-            for user in bulk_users:
-                row = process_user(user)
-                if row:
-                    rows.append(row)
-                    fetched_usernames.add(user.get("username","").lower())
-                    print(f"[OK]   {user.get('username')}: puzzles={row['puzzles_solved_total']}, rating={row['puzzle_rating']}")
+            resp = fetch_with_retry(f"{BASE_URL}/user/{username}", HEADERS)
+            row  = process_user(resp.json())
+            if row:
+                rows.append(row)
+                print(f"[OK]   {row['username']}: puzzles={row['puzzles_solved_total']}, rating={row['puzzle_rating']}")
+            time.sleep(0.3)
         except Exception as e:
-            print(f"[WARN] Bulk fetch fehlgeschlagen: {e}. Versuche einzeln...")
-
-    # ── Fallback: individually fetch any member the bulk missed ─────────────
-    missed = [m for m in members if m not in fetched_usernames and m not in already_recorded]
-    if missed:
-        print(f"[INFO] Fetching {len(missed)} missed members individually...")
-        for username in missed:
-            try:
-                url  = f"{BASE_URL}/user/{username}"
-                resp = fetch_with_retry(url, HEADERS)
-                user = resp.json()
-                row  = process_user(user)
-                if row:
-                    rows.append(row)
-                    print(f"[OK]   {username} (fallback): puzzles={row['puzzles_solved_total']}")
-                time.sleep(0.3)
-            except Exception as e:
-                print(f"[WARN] Could not fetch {username}: {e}")
+            print(f"[WARN] Konnte {username} nicht abrufen: {e}")
 
     # ── Write results ────────────────────────────────────────────────────────
     if rows:
