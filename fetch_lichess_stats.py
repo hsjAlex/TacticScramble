@@ -89,7 +89,7 @@ def get_users_bulk(usernames):
         url,
         {**HEADERS, "Content-Type": "text/plain"},
         method="POST",
-        data=",".join(usernames),
+        data="\n".join(usernames),  # Lichess /api/users erwartet newline-getrennte Namen
     )
     return resp.json()
 
@@ -179,15 +179,17 @@ def main():
     fetched_usernames = set()
     for chunk in chunked(members, 300):
         try:
+            print(f"[INFO] Bulk-Fetch für {len(chunk)} Spieler...")
             bulk_users = get_users_bulk(chunk)
+            print(f"[INFO] API zurückgegeben: {len(bulk_users)} Spieler")
             for user in bulk_users:
                 row = process_user(user)
                 if row:
                     rows.append(row)
-                    fetched_usernames.add(user.get("username",""))
+                    fetched_usernames.add(user.get("username","").lower())
                     print(f"[OK]   {user.get('username')}: puzzles={row['puzzles_solved_total']}, rating={row['puzzle_rating']}")
         except Exception as e:
-            print(f"[WARN] Bulk fetch failed for chunk: {e}. Will retry individually.")
+            print(f"[WARN] Bulk fetch fehlgeschlagen: {e}. Versuche einzeln...")
 
     # ── Fallback: individually fetch any member the bulk missed ─────────────
     missed = [m for m in members if m not in fetched_usernames and m not in already_recorded]
